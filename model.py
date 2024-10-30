@@ -1,5 +1,5 @@
-from typing import NewType, Protocol
-from enum import StrEnum
+from typing import Protocol
+from subprocess import check_output
 
 arguments = {	"SEED" 			: "-s",
 				"JOBS" 			: "-j",
@@ -28,6 +28,10 @@ class Scheduler(Protocol):
 	def parameters(self) -> list[str]:
 		...
 
+	@property
+	def scheduler_path(self) -> str:
+		...
+
 class BasicScheduler:
 	def __init__(self) -> None:
 		self._name = "Basic"
@@ -38,6 +42,8 @@ class BasicScheduler:
 							"POLICY",				# SJF, FIFO, RR
 							"QUANTUM",				# length of time slice for RR policy
 							]
+		self._scheduler_path = "ostep/basic.py"
+
 	@property
 	def name(self) -> str:
 		return self._name
@@ -46,6 +52,10 @@ class BasicScheduler:
 	def parameters(self) -> list[str]:
 		return self._parameters
 
+	@property
+	def scheduler_path(self):
+		return self._scheduler_path
+	
 class LotteryScheduler:
 	def __init__(self) -> None:
 		self._name = "Lottery"
@@ -56,6 +66,8 @@ class LotteryScheduler:
 							"MAXTICKET",			
 							"QUANTUM",				# length of time slice
 							]
+		self._scheduler_path = "ostep/loterry.py"
+
 	@property
 	def name(self) -> str:
 		return self._name
@@ -63,6 +75,10 @@ class LotteryScheduler:
 	@property
 	def parameters(self) -> list[str]:
 		return self._parameters
+
+	@property
+	def scheduler_path(self):
+		return self._scheduler_path
 
 class MLFQScheduler:
 	def __init__(self) -> None:
@@ -82,6 +98,8 @@ class MLFQScheduler:
 							"IOBUMP",
 							"JLIST",			
 							]
+		self._scheduler_path = "ostep/mlfq.py"
+
 	@property
 	def name(self) -> str:
 		return self._name
@@ -89,11 +107,17 @@ class MLFQScheduler:
 	@property
 	def parameters(self) -> list[str]:
 		return self._parameters
+
+	@property
+	def scheduler_path(self):
+		return self._scheduler_path
 
 class MultiCPUScheduler:
 	def __init__(self) -> None:
 		self._name = "temp"
 		self._parameters = []
+		self._scheduler_path = "ostep/multi.py"
+
 	@property
 	def name(self) -> str:
 		return self._name
@@ -101,6 +125,10 @@ class MultiCPUScheduler:
 	@property
 	def parameters(self) -> list[str]:
 		return self._parameters
+
+	@property
+	def scheduler_path(self):
+		return self._scheduler_path
 
 class SchedulerModel:
 	def __init__(self) -> None:
@@ -129,9 +157,11 @@ class SchedulerModel:
 	@property
 	def current_scheduler(self) -> str:
 		return self._current_scheduler.name
+
 	@property
 	def scheduler_parameters(self) -> list[str]:
 		return self._current_scheduler.parameters
+
 	@property
 	def param_text_hints(self) -> dict[str,str]:
 		return self._param_text_hints
@@ -143,4 +173,6 @@ class SchedulerModel:
 		self._current_scheduler = self._scheduler_mapping[new_scheduler]
 
 	def solve(self, cmd:str):
-		pass
+		
+		out = check_output(cmd)
+		
