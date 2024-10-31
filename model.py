@@ -173,16 +173,14 @@ class SchedulerModel:
 											else "length of time slice (if not using -QUANTUMLIST)"
 		self._current_scheduler = self._scheduler_mapping[new_scheduler]
 
-	def solve(self, parameters:dict[str,str]) -> dict[str,str]:
+	def solve(self, parameters:dict[str,str]) -> list[str]:
 		cmd = ["python", f"Flet-OSTEP-Simulator/{self._current_scheduler.path}", "-c"]
 
 		for _, (k, v) in enumerate(parameters.items()):
 			cmd.append(f"{arguments[k]} {v}")
 
 		result = subprocess.run(cmd, capture_output=True, shell=True, text=True)
-		#print(result.stdout)
-		given, solution= str(result.stdout).split("\n\n** Solutions **\n")
-		print(given)
-		print("-----------------------------------")
-		print(solution)
-		
+
+		given, solution = str(result.stdout).split("\n\n** Solutions **\n")
+
+		return [given, solution]

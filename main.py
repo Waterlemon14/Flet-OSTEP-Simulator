@@ -20,7 +20,7 @@ DEBUG_MODE = True
 class SchedulerRunner(Protocol):
     def change_scheduler(self, new_scheduler: str):
         ...
-    def solve(self):
+    def solve(self, parameters: dict[str,str]) -> list[str]:
         ...
 
 class SchedulerView:
@@ -29,13 +29,21 @@ class SchedulerView:
                                             options=[ft.dropdown.Option(op) for op in options],
                                             on_change=self._change_scheduler)
         
-        self._parameter_fields = ft.Column(spacing=2, scroll=ft.ScrollMode.ALWAYS)
+        self._parameter_fields = ft.Column(spacing=2)
+
+        self._parameters = []
+
+        self._given = ft.Column(spacing=2)  
 
         self._results = ft.Column(spacing=2)       
 
-        self._submit_button = ft.ElevatedButton(text="Elevated button", on_click=self._solve, icon="forest")     
+        self._submit_button = ft.ElevatedButton(text="Solve", on_click=self._solve, icon="forest")     
+
+        self._results_button = ft.ElevatedButton(text="Show results", on_click=self._show_results, icon="forest")     
 
         self._debug_text = ft.Text()     
+
+        self._saved_results: str
 
         self._scheduler_changer: SchedulerRunner
 
@@ -57,27 +65,47 @@ class SchedulerView:
     def _solve(self, _: ft.ControlEvent):
         parameters = {}
 
-        for param in self._parameter_fields.controls:
-            if param.value != None:
+        for param in self._parameters:
+            if not param.value:
                 continue
             parameters[param.label] = param.value
 
-        self._scheduler_changer.solve(parameters)
+        given, results = self._scheduler_changer.solve(parameters)
+
+        self._saved_results = results
+
+        self._given.controls = [ft.Text(value=given)]
+        self._refresh_page()
+
+
+    def _show_results(self, _: ft.ControlEvent):
+        self._results.controls = [ft.Text(value=self._saved_results)]
+        self._refresh_page()
 
     def register_scheduler_changer(self, callback: SchedulerRunner):
         self._scheduler_changer = callback
 
     def entrypoint(self, page: ft.Page):
         self._page = page
+        contents = []
 
-        page.add(self._scheduler_choice)
-        page.add(self._parameter_fields)
-        page.add(self._results)
-        page.add(self._submit_button)
+        contents.append(self._scheduler_choice)
+        contents.append(self._parameter_fields)
+        contents.append(self._results)
+        contents.append(self._submit_button)
         if DEBUG_MODE:
-            page.add(self._debug_text)
+            contents.append(self._debug_text)
+        contents.append(self._given)
+        contents.append(self._results_button)
+        contents.append(self._results)
+
+        entries = ft.Column(scroll=ft.ScrollMode.ALWAYS, expand=True, controls = contents)
+
+        page.add(entries)
 
         self._scheduler_choice.focus()
+
+        self._refresh_page()
 
     def show_debug_text(self, curr_sched:str):
         self._debug_text.value = f"Scheduler changed to {curr_sched}"
@@ -86,6 +114,7 @@ class SchedulerView:
     def show_parameters(self, params: list[str], text_hints: dict[str,str]):
         content = [ft.TextField(label=param, hint_text=text_hints[param], width=750)
                 for param in params]
+        self._parameters = content
         self._parameter_fields.controls = content
         self._refresh_page()
     
@@ -108,8 +137,8 @@ class SchedulerController:
 
         view.show_parameters(model.scheduler_parameters, model.param_text_hints)
 
-    def solve(self, parameters: dict[str,str]):
-        self._model.solve(parameters)
+    def solve(self, parameters: dict[str,str]) -> list[str]:
+        return self._model.solve(parameters)
 
 
 def main():

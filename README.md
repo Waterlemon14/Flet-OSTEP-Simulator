@@ -2,4 +2,6 @@
 Flet UI on OSTEP Simulators
 
 ## TODO
-	- connect model to UI
+	- add more simulators
+	- make more pretty
+	- add other features of algos
