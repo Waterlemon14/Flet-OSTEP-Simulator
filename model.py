@@ -1,5 +1,6 @@
 from typing import Protocol
-from subprocess import check_output
+import subprocess
+
 
 arguments = {	"SEED" 			: "-s",
 				"JOBS" 			: "-j",
@@ -29,7 +30,7 @@ class Scheduler(Protocol):
 		...
 
 	@property
-	def scheduler_path(self) -> str:
+	def path(self) -> str:
 		...
 
 class BasicScheduler:
@@ -42,7 +43,7 @@ class BasicScheduler:
 							"POLICY",				# SJF, FIFO, RR
 							"QUANTUM",				# length of time slice for RR policy
 							]
-		self._scheduler_path = "ostep/basic.py"
+		self._path = "ostep/basic.py"
 
 	@property
 	def name(self) -> str:
@@ -53,8 +54,8 @@ class BasicScheduler:
 		return self._parameters
 
 	@property
-	def scheduler_path(self):
-		return self._scheduler_path
+	def path(self):
+		return self._path
 	
 class LotteryScheduler:
 	def __init__(self) -> None:
@@ -66,7 +67,7 @@ class LotteryScheduler:
 							"MAXTICKET",			
 							"QUANTUM",				# length of time slice
 							]
-		self._scheduler_path = "ostep/loterry.py"
+		self._path = "ostep/lottery.py"
 
 	@property
 	def name(self) -> str:
@@ -77,8 +78,8 @@ class LotteryScheduler:
 		return self._parameters
 
 	@property
-	def scheduler_path(self):
-		return self._scheduler_path
+	def path(self):
+		return self._path
 
 class MLFQScheduler:
 	def __init__(self) -> None:
@@ -98,7 +99,7 @@ class MLFQScheduler:
 							"IOBUMP",
 							"JLIST",			
 							]
-		self._scheduler_path = "ostep/mlfq.py"
+		self._path = "ostep/mlfq.py"
 
 	@property
 	def name(self) -> str:
@@ -109,14 +110,14 @@ class MLFQScheduler:
 		return self._parameters
 
 	@property
-	def scheduler_path(self):
-		return self._scheduler_path
+	def path(self):
+		return self._path
 
 class MultiCPUScheduler:
 	def __init__(self) -> None:
 		self._name = "temp"
 		self._parameters = []
-		self._scheduler_path = "ostep/multi.py"
+		self._path = "ostep/multi.py"
 
 	@property
 	def name(self) -> str:
@@ -127,8 +128,8 @@ class MultiCPUScheduler:
 		return self._parameters
 
 	@property
-	def scheduler_path(self):
-		return self._scheduler_path
+	def path(self):
+		return self._path
 
 class SchedulerModel:
 	def __init__(self) -> None:
@@ -172,7 +173,16 @@ class SchedulerModel:
 											else "length of time slice (if not using -QUANTUMLIST)"
 		self._current_scheduler = self._scheduler_mapping[new_scheduler]
 
-	def solve(self, cmd:str):
-		
-		out = check_output(cmd)
+	def solve(self, parameters:dict[str,str]) -> dict[str,str]:
+		cmd = ["python", f"Flet-OSTEP-Simulator/{self._current_scheduler.path}", "-c"]
+
+		for _, (k, v) in enumerate(parameters.items()):
+			cmd.append(f"{arguments[k]} {v}")
+
+		result = subprocess.run(cmd, capture_output=True, shell=True, text=True)
+		#print(result.stdout)
+		given, solution= str(result.stdout).split("\n\n** Solutions **\n")
+		print(given)
+		print("-----------------------------------")
+		print(solution)
 		

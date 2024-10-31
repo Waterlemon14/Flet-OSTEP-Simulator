@@ -55,7 +55,14 @@ class SchedulerView:
         self._scheduler_choice.focus()
 
     def _solve(self, _: ft.ControlEvent):
-        self._scheduler_changer.solve()
+        parameters = {}
+
+        for param in self._parameter_fields.controls:
+            if param.value != None:
+                continue
+            parameters[param.label] = param.value
+
+        self._scheduler_changer.solve(parameters)
 
     def register_scheduler_changer(self, callback: SchedulerRunner):
         self._scheduler_changer = callback
@@ -101,8 +108,9 @@ class SchedulerController:
 
         view.show_parameters(model.scheduler_parameters, model.param_text_hints)
 
-    def solve(self):
-        pass
+    def solve(self, parameters: dict[str,str]):
+        self._model.solve(parameters)
+
 
 def main():
     sched_options = ["Basic", "Lottery", "MLFQ", "Multi-CPU"]
