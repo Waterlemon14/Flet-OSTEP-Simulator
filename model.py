@@ -34,6 +34,8 @@ class Scheduler(Protocol):
 		...
 
 class BasicScheduler:
+	"""Basic Scheduler simulator provided in the OS in Three Easy Steps Codebase"""
+
 	def __init__(self) -> None:
 		self._name = "Basic"
 		self._parameters = ["SEED",
@@ -58,6 +60,7 @@ class BasicScheduler:
 		return self._path
 	
 class LotteryScheduler:
+	"""Lottery Scheduler simulator provided in the OS in Three Easy Steps Codebase"""
 	def __init__(self) -> None:
 		self._name = "Lottery"
 		self._parameters = ["SEED",
@@ -82,6 +85,7 @@ class LotteryScheduler:
 		return self._path
 
 class MLFQScheduler:
+	"""Multi-level Feedback Queue Scheduler simulator provided in the OS in Three Easy Steps Codebase"""
 	def __init__(self) -> None:
 		self._name = "MLFQ"
 		self._parameters = ["SEED",
@@ -91,13 +95,13 @@ class MLFQScheduler:
 							"QUANTUMLIST",
 							"ALLOTMENTLIST",
 							"JOBS",
+							"JLIST",			
 							"MAXLEN",
 							"MAXIO",
 							"BOOST",
 							"IOTIME",
-							"STAY",
 							"IOBUMP",
-							"JLIST",			
+							"STAY",
 							]
 		self._path = "ostep/mlfq.py"
 
@@ -132,6 +136,7 @@ class MultiCPUScheduler:
 		return self._path
 
 class SchedulerModel:
+	"""Scheduler model using OSTEP provided simulators"""
 	def __init__(self) -> None:
 		self._current_scheduler: Scheduler
 		self._scheduler_mapping = { "Basic":BasicScheduler(), 
@@ -168,19 +173,25 @@ class SchedulerModel:
 		return self._param_text_hints
 
 	def change_scheduler(self, new_scheduler:str):
+		"""Changes current scheduler and parameter hints associated with the specific scheduler"""
 		self._param_text_hints["QUANTUM"] = "length of time slice (for RR policy)" if new_scheduler == "Basic" \
 											else "length of time slice" if new_scheduler == "Lottery" \
 											else "length of time slice (if not using -QUANTUMLIST)"
 		self._current_scheduler = self._scheduler_mapping[new_scheduler]
 
 	def solve(self, parameters:dict[str,str]) -> list[str]:
+		"""Solves the current simulation given a set of parameters and returns the given and solution results of the simulator"""
+
 		cmd = ["python", f"Flet-OSTEP-Simulator/{self._current_scheduler.path}", "-c"]
 
 		for _, (k, v) in enumerate(parameters.items()):
 			cmd.append(f"{arguments[k]} {v}")
 
 		result = subprocess.run(cmd, capture_output=True, shell=True, text=True)
+		# print(result.stdout)
 
-		given, solution = str(result.stdout).split("\n\n** Solutions **\n")
+		div = "\n\nExecution Trace:\n" if self._current_scheduler.name == "MLFQ" \
+				else "\n\n** Solutions **\n"
+		given, solution = str(result.stdout).split(div)
 
 		return [given, solution]

@@ -24,6 +24,7 @@ class SchedulerRunner(Protocol):
         ...
 
 class SchedulerView:
+    """Flet based view of Scheduler simulators"""
     def __init__(self, options: list[str]) -> None:
         self._scheduler_choice = ft.Dropdown(label='Pick scheduler to simulate',
                                             options=[ft.dropdown.Option(op) for op in options],
@@ -49,20 +50,33 @@ class SchedulerView:
 
         self._page: ft.Page | None = None
 
-    def _refresh_page(self):    # call every update of page
+    def _refresh_page(self):
+        """Refreshes current page to reflect changegs"""
         if self._page:
             self._page.update()
 
+    def _clear_page(self):
+        """Clears Given and Results text"""
+        self._given.controls = []
+        self._results.controls = []
+        self._refresh_page()
+
     def _change_scheduler(self, _: ft.ControlEvent):
+        """Changes Scheduler for simulator"""
         if self._scheduler_choice.value is None:
             return
 
         new_scheduler = self._scheduler_choice.value
         self._scheduler_changer.change_scheduler(new_scheduler)
 
+        self._clear_page()
+
         self._scheduler_choice.focus()
 
     def _solve(self, _: ft.ControlEvent):
+        """Solve Scheduling setup given parameters indicated"""
+        if self._scheduler_choice.value is None:
+            return
         parameters = {}
 
         for param in self._parameters:
@@ -77,15 +91,19 @@ class SchedulerView:
         self._given.controls = [ft.Text(value=given)]
         self._refresh_page()
 
-
     def _show_results(self, _: ft.ControlEvent):
+        """Shows results of given parameters using scheduling algo"""
+        if self._scheduler_choice.value is None:
+            return
         self._results.controls = [ft.Text(value=self._saved_results)]
         self._refresh_page()
 
     def register_scheduler_changer(self, callback: SchedulerRunner):
+        """Provides path from view back to controller"""
         self._scheduler_changer = callback
 
     def entrypoint(self, page: ft.Page):
+        """Page Fields are instantiated here"""
         self._page = page
         contents = []
 
@@ -108,10 +126,12 @@ class SchedulerView:
         self._refresh_page()
 
     def show_debug_text(self, curr_sched:str):
+        """For debugging purposes"""
         self._debug_text.value = f"Scheduler changed to {curr_sched}"
         self._refresh_page()
 
     def show_parameters(self, params: list[str], text_hints: dict[str,str]):
+        """Shows parameters for scheduling algorithm chosen"""
         content = [ft.TextField(label=param, hint_text=text_hints[param], width=750)
                 for param in params]
         self._parameters = content
@@ -119,13 +139,14 @@ class SchedulerView:
         self._refresh_page()
     
 class SchedulerController:
+    """Controller for Scheduler simulators"""
     def __init__(self, model: SchedulerModel, view: SchedulerView):
         self._model = model
         self._view = view
 
     def start(self):
         self._view.register_scheduler_changer(self)
-        ft.app(self._view.entrypoint)
+        ft.app(self._view.entrypoint)                               # only Flet specific command in controller
 
     def change_scheduler(self, new_scheduler: str):
         model = self._model
@@ -142,7 +163,7 @@ class SchedulerController:
 
 
 def main():
-    sched_options = ["Basic", "Lottery", "MLFQ", "Multi-CPU"]
+    sched_options = ["Basic", "Lottery", "MLFQ"]
     model = SchedulerModel()
     view = SchedulerView(sched_options)
     controller = SchedulerController(model, view)
